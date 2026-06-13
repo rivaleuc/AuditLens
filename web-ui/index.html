@@ -1,56 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>AuditLens</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-[#1e1e2e] text-gray-200 min-h-screen font-mono">
-  <nav class="bg-[#181825] border-b border-[#313244] px-6 py-3 flex justify-between items-center">
-    <div class="flex items-center gap-3"><span class="text-xl">🔍</span><span class="font-bold">AuditLens</span></div>
-    <div class="flex gap-2 text-xs">
-      <span class="px-2 py-1 bg-red-900/50 text-red-400 rounded">Critical: 1</span>
-      <span class="px-2 py-1 bg-orange-900/50 text-orange-400 rounded">High: 1</span>
-    </div>
-  </nav>
-
-  <main class="max-w-4xl mx-auto p-6 grid lg:grid-cols-2 gap-4">
-    <!-- Code Input -->
-    <section class="bg-[#181825] rounded-xl border border-[#313244] overflow-hidden">
-      <div class="bg-[#11111b] px-4 py-2 border-b border-[#313244] flex items-center gap-2">
-        <div class="flex gap-1.5"><div class="w-3 h-3 rounded-full bg-red-500"></div><div class="w-3 h-3 rounded-full bg-yellow-500"></div><div class="w-3 h-3 rounded-full bg-green-500"></div></div>
-        <span class="text-xs text-gray-500 ml-2">contract.sol</span>
-      </div>
-      <textarea rows="16" placeholder="// Paste your Solidity contract here...&#10;&#10;function withdraw() public {&#10;    uint amount = balances[msg.sender];&#10;    (bool ok,) = msg.sender.call{value: amount}('');&#10;    require(ok);&#10;    balances[msg.sender] = 0;&#10;}"
-        class="w-full bg-transparent p-4 text-sm text-green-300 placeholder-gray-600 outline-none resize-none leading-relaxed"></textarea>
-    </section>
-
-    <!-- Results -->
-    <section class="space-y-3">
-      <select class="w-full bg-[#181825] border border-[#313244] rounded-lg px-4 py-2.5 text-sm outline-none">
-        <option>Solidity</option><option>Vyper</option><option>Rust</option>
-      </select>
-      <button class="w-full bg-[#cba6f7] hover:bg-[#b4befe] text-[#1e1e2e] rounded-lg py-3 font-bold transition">🔬 Run AI Audit</button>
-
-      <!-- Finding cards -->
-      <div class="bg-red-950/30 border border-red-900 rounded-xl p-4">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="px-2 py-0.5 bg-red-900 text-red-300 text-xs rounded font-bold">CRITICAL</span>
-          <span class="text-sm font-semibold">Reentrancy Vulnerability</span>
-        </div>
-        <p class="text-xs text-gray-400">External call before state update. Attacker can re-enter withdraw() and drain funds.</p>
-      </div>
-      <div class="bg-orange-950/30 border border-orange-900 rounded-xl p-4">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="px-2 py-0.5 bg-orange-900 text-orange-300 text-xs rounded font-bold">HIGH</span>
-          <span class="text-sm font-semibold">Unprotected Function</span>
-        </div>
-        <p class="text-xs text-gray-400">No access control on withdraw(). Any address with balance can call.</p>
-      </div>
-      <div class="bg-[#181825] border border-[#313244] rounded-xl p-4 text-center">
-        <span class="text-2xl font-bold text-red-400">Risk: 85/100</span>
-      </div>
-    </section>
-  </main>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="AuditLens — AI-powered smart contract security auditor. Detect reentrancy, overflow, and access-control vulnerabilities with severity ratings." />
+    <title>AuditLens — AI Smart Contract Security Auditor</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
