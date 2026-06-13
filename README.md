@@ -1,47 +1,34 @@
 # AuditLens
 
-AI-powered smart contract security auditing on GenLayer. Submit code, validators detect vulnerabilities and rate severity by consensus.
-
-## Why This Exists
-
-Smart contract exploits cost billions annually. Traditional static analysis tools catch known patterns but miss novel attack vectors. AuditLens uses GenLayer's AI validators to reason about code like a human auditor — understanding context, intent, and exploitability.
+AI-powered smart contract security auditing. Submit code, GenLayer validators detect vulnerabilities and rate severity by consensus.
 
 ## Why GenLayer
 
-- **Interpretation over pattern-matching** — Security auditing isn't a lookup table. Novel vulnerabilities require understanding what code *does*, not just what it looks like.
-- **Severity requires judgment** — Is a reentrancy bug critical or low-risk? It depends on context: what funds are at stake, what access controls exist, how likely exploitation is. AI validators assess real-world impact.
-- **Attack vector reasoning** — Deterministic VMs can flag `call.value()` but can't reason about whether the surrounding logic actually enables an attack.
-- **Consensus eliminates false positives** — Multiple validators independently audit the code. A vulnerability only gets reported if validators agree it's real and exploitable.
-- **Novel vulnerability discovery** — New exploit patterns emerge constantly. AI validators can identify vulnerabilities that no existing rule covers.
+Security auditing requires interpretation, not pattern matching:
+
+- **Novel vulnerabilities can't be caught by regex.** A deterministic VM can flag known patterns, but can't reason about how two innocent-looking functions interact to create an exploit.
+- **Severity classification is judgment.** Is this reentrancy critical or low? Depends on context — who calls it, what's at stake, is there a guard elsewhere. AI validators assess real-world exploitability.
+- **Multiple models catch more.** One model might spot the reentrancy, another catches the front-running risk. Consensus across diverse validators produces more comprehensive audits than any single tool.
+- **No single auditor to trust.** Centralized audit firms are expensive and have conflicts of interest. Decentralized consensus removes the trust assumption.
+
+## Deployed
+
+**GenLayer (Bradbury):** `0x8736Ee89DC78E57d541B92c59a9c7F48089ce9fB`
+
+## Test result
+
+Submitted a classic reentrancy-vulnerable `withdraw()` function:
+- ✅ **Critical:** Reentrancy Vulnerability detected
+- ✅ **High:** Unprotected Function flagged
 
 ## Structure
 
 ```
 AuditLens/
-├── audit/          # GenLayer contract (.py) + Solidity integration (.sol)
-├── web-ui/         # React frontend for code submission + results
-├── config/         # Network and deployment configuration
+├── audit/
+│   ├── audit_lens.py       ← GenLayer contract
+│   └── AuditRegistry.sol   ← On-chain proof-of-audit
+├── web-ui/                  ← React + Vite frontend
+├── config/
 └── README.md
-```
-
-## Test Results
-
-```
-Input:  Solidity withdraw() function with unchecked external call
-Output: 
-  ├── Reentrancy vulnerability — CRITICAL
-  └── Unprotected function (missing access control) — HIGH
-```
-
-## Deployment
-
-- **Network:** GenLayer Testnet
-- **Contract:** `0x8736Ee89DC78E57d541B92c59a9c7F48089ce9fB`
-
-## Quick Start
-
-```bash
-cd web-ui && npm install && npm run dev
-# Submit any Solidity code through the UI
-# Validators return vulnerability report with severity ratings
 ```
