@@ -1,0 +1,7 @@
+{
+  "genlayer": {
+    "contract_path": "audit/audit_lens.py",
+    "network": "testnet"
+  },
+  "supported_languages": ["solidity", "vyper", "rust"]
+}
