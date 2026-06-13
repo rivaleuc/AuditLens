@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
-
-const CONTRACT = '0x8736Ee89DC78E57d541B92c59a9c7F48089ce9fB'
+import { read, write, CONTRACT } from './genlayer'
 
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info'
 
@@ -62,72 +61,13 @@ const FILES = [
   { name: 'Ownable.sol', icon: '◈', active: false, dirty: false },
 ]
 
-function analyze(code: string): Finding[] {
-  const out: Finding[] = []
-  const lines = code.split('\n')
-  lines.forEach((ln, i) => {
-    const n = i + 1
-    if (/\.call\{value:/.test(ln)) {
-      out.push({
-        id: `F${n}a`,
-        severity: 'critical',
-        title: 'Reentrancy: external call before state update',
-        line: n,
-        detail:
-          'Ether is sent via low-level call before `balances` is decremented. A malicious receiver can re-enter withdraw() and drain the contract. Apply checks-effects-interactions or a reentrancy guard.',
-        swc: 'SWC-107',
-      })
-    }
-    if (/function\s+setOwner/.test(ln)) {
-      out.push({
-        id: `F${n}b`,
-        severity: 'high',
-        title: 'Missing access control on setOwner',
-        line: n,
-        detail: 'setOwner() has no onlyOwner modifier — anyone can seize ownership of the contract.',
-        swc: 'SWC-105',
-      })
-    }
-    if (/function\s+drain/.test(ln)) {
-      out.push({
-        id: `F${n}c`,
-        severity: 'high',
-        title: 'Unprotected fund withdrawal',
-        line: n,
-        detail: 'drain() forwards the full balance to owner with no guard. Combined with setOwner this is a full takeover path.',
-        swc: 'SWC-105',
-      })
-    }
-    if (/require\([^,]*\);/.test(ln) && !/".*"/.test(ln)) {
-      out.push({
-        id: `F${n}d`,
-        severity: 'low',
-        title: 'require() without revert reason',
-        line: n,
-        detail: 'Add a descriptive revert string to aid debugging and off-chain monitoring.',
-        swc: 'SWC-123',
-      })
-    }
-    if (/pragma solidity \^/.test(ln)) {
-      out.push({
-        id: `F${n}e`,
-        severity: 'medium',
-        title: 'Floating pragma',
-        line: n,
-        detail: 'Lock the compiler version (e.g. pragma solidity 0.8.24;) to ensure deterministic builds.',
-        swc: 'SWC-103',
-      })
-    }
-  })
-  out.push({
-    id: 'Fx',
-    severity: 'info',
-    title: 'No event emitted on state change',
-    line: 12,
-    detail: 'deposit/withdraw do not emit events, hampering off-chain indexing and transparency.',
-    swc: 'SWC-000',
-  })
-  return out
+function normSev(s: any): Severity {
+  const x = String(s ?? '').toLowerCase()
+  if (x.includes('crit')) return 'critical'
+  if (x.includes('high')) return 'high'
+  if (x.includes('med')) return 'medium'
+  if (x.includes('low')) return 'low'
+  return 'info'
 }
 
 export default function App() {
@@ -136,13 +76,18 @@ export default function App() {
   const [open, setOpen] = useState<string | null>(null)
   const [scanned, setScanned] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [riskScore, setRiskScore] = useState(0)
+  const [auditCount, setAuditCount] = useState<number | null>(null)
 
   const lineCount = useMemo(() => code.split('\n').length, [code])
 
-  const riskScore = useMemo(() => {
-    const raw = findings.reduce((s, f) => s + SEVERITY_META[f.severity].weight, 0)
-    return Math.min(100, raw)
-  }, [findings])
+  useEffect(() => {
+    read('stats')
+      .then((s: any) => setAuditCount(Number(s?.total_audits ?? s?.[0] ?? 0)))
+      .catch(() => {
+        /* keep toolbar fallback on read failure */
+      })
+  }, [])
 
   const counts = useMemo(() => {
     const c: Record<Severity, number> = { critical: 0, high: 0, medium: 0, low: 0, info: 0 }
@@ -150,20 +95,41 @@ export default function App() {
     return c
   }, [findings])
 
-  function runAudit() {
+  async function runAudit() {
     setBusy(true)
     setFindings([])
     setScanned(false)
-    toast('Static analysis running…', { icon: '⚙️' })
-    setTimeout(() => {
-      const res = analyze(code)
-      setFindings(res)
+    toast('Submitting audit on-chain…', { icon: '⚙️' })
+    try {
+      await write('submit_audit', [code, 'solidity'])
+      const s: any = await read('stats')
+      const totalAudits = Number(s?.total_audits ?? s?.[0] ?? 0)
+      setAuditCount(totalAudits)
+
+      const audit: any = await read('get_audit', [String(totalAudits - 1)])
+      const rawFindings = audit?.findings ?? audit?.[0] ?? []
+      const mapped: Finding[] = (Array.isArray(rawFindings) ? rawFindings : []).map((f: any, i: number) => ({
+        id: `F${i}`,
+        severity: normSev(f?.severity ?? f?.[0]),
+        title: String(f?.title ?? f?.[1] ?? 'Finding'),
+        line: Number(f?.line ?? f?.[3] ?? 0) || 1,
+        detail: String(f?.description ?? f?.[2] ?? ''),
+        swc: String(f?.swc ?? f?.[4] ?? 'SWC-000'),
+      }))
+      const rs = Number(audit?.risk_score ?? audit?.[1] ?? 0)
+      setRiskScore(Math.max(0, Math.min(100, Math.round(rs <= 1 ? rs * 100 : rs))))
+      setFindings(mapped)
       setScanned(true)
+
+      const summary = String(audit?.summary ?? audit?.[2] ?? '')
+      const crit = mapped.filter((f) => f.severity === 'critical').length
+      if (crit) toast.error(`${crit} critical issue(s) found`, { description: summary || undefined })
+      else toast.success('Audit complete', { description: summary || undefined })
+    } catch (e: any) {
+      toast.error('Audit failed', { description: e?.message ?? String(e) })
+    } finally {
       setBusy(false)
-      const crit = res.filter((f) => f.severity === 'critical').length
-      if (crit) toast.error(`${crit} critical issue(s) found`)
-      else toast.success('Audit complete')
-    }, 900)
+    }
   }
 
   const riskColor = riskScore >= 60 ? '#F85149' : riskScore >= 30 ? '#F59E0B' : '#3FB950'
@@ -183,6 +149,7 @@ export default function App() {
           <span className="text-[#6E7681]">Terminal</span>
         </div>
         <div className="flex items-center gap-3">
+          {auditCount != null && <span className="hidden text-[#6E7681] sm:inline">audits {auditCount}</span>}
           <span className="hidden text-[#6E7681] sm:inline">{CONTRACT.slice(0, 10)}…{CONTRACT.slice(-6)}</span>
           <button
             onClick={runAudit}
