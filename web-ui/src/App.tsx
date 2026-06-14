@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster, toast } from 'sonner'
-import { read, write, CONTRACT } from './genlayer'
+import { read, write, CONTRACT, connectWallet, isWalletConnected } from './genlayer'
 
 type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info'
 
@@ -78,6 +78,17 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [riskScore, setRiskScore] = useState(0)
   const [auditCount, setAuditCount] = useState<number | null>(null)
+  const [walletAddr, setWalletAddr] = useState<string | null>(null)
+
+  async function handleConnect() {
+    try {
+      const a = await connectWallet()
+      setWalletAddr(a.slice(0, 6) + '…' + a.slice(-4))
+      toast.success('Wallet connected')
+    } catch (e: any) {
+      toast.error(e.message || 'Connect failed')
+    }
+  }
 
   const lineCount = useMemo(() => code.split('\n').length, [code])
 
@@ -151,6 +162,16 @@ export default function App() {
         <div className="flex items-center gap-3">
           {auditCount != null && <span className="hidden text-[#6E7681] sm:inline">audits {auditCount}</span>}
           <span className="hidden text-[#6E7681] sm:inline">{CONTRACT.slice(0, 10)}…{CONTRACT.slice(-6)}</span>
+          <button
+            onClick={handleConnect}
+            className={`flex items-center gap-1.5 rounded border px-3 py-1 font-bold transition ${
+              isWalletConnected()
+                ? 'border-[#F59E0B]/60 bg-[#F59E0B]/10 text-[#F59E0B]'
+                : 'border-[#30363D] text-[#C9D1D9] hover:border-[#F59E0B]/60 hover:text-[#F59E0B]'
+            }`}
+          >
+            {walletAddr ? `● ${walletAddr}` : 'Connect Wallet'}
+          </button>
           <button
             onClick={runAudit}
             disabled={busy}
