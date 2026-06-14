@@ -15,12 +15,6 @@ Security auditing requires interpretation, not pattern matching:
 
 **GenLayer (Bradbury):** `0x8736Ee89DC78E57d541B92c59a9c7F48089ce9fB`
 
-## Test result
-
-Submitted a classic reentrancy-vulnerable `withdraw()` function:
-- ✅ **Critical:** Reentrancy Vulnerability detected
-- ✅ **High:** Unprotected Function flagged
-
 ## Structure
 
 ```
