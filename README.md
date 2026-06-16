@@ -4,8 +4,8 @@
 
 AuditLens takes a snippet of contract code, has an LLM act as a security auditor, and returns structured vulnerability findings plus a risk score — agreed on by GenLayer validators rather than a single opinionated model. Auditing is a judgment task, so the verdict is a living interpretation of the code, not a static lint rule.
 
-- **Contract (Bradbury, chain 4221):** `0x8736Ee89DC78E57d541B92c59a9c7F48089ce9fB`
-- **Explorer:** https://explorer-bradbury.genlayer.com/contract/0x8736Ee89DC78E57d541B92c59a9c7F48089ce9fB
+- **Contract (Bradbury, chain 4221):** `0xa18B9c222D307346b20e30B4fc3AEfd869B26382`
+- **Explorer:** https://explorer-bradbury.genlayer.com/contract/0xa18B9c222D307346b20e30B4fc3AEfd869B26382
 - **Live app:** https://auditlens-cj5.pages.dev
 
 ## What it does
